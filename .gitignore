@@ -1,0 +1,5 @@
+cats-vs-dogs/
+test-data-set/
+saved_model.pth
+__pycache__/
+*.pyc
