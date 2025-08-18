@@ -12,9 +12,9 @@ ImageFile.LOAD_TRUNCATED_IMAGES =True
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Hyper paramaters
-num_epochs = 90
+num_epochs = 60
 batch_size = 16
-learning_rate = 0.00004
+learning_rate = 0.0001
 
 # Resize and Tranform Images
 class ResizeWithPadding:
@@ -42,22 +42,22 @@ class ConvNet(nn.Module):
 
     def forward(self, x):
         # N, 3, 300, 300 (batch_size, number of colors, pixel_length, pixel_height)
-        x = F.relu(self.conv1(x))   # N, 128, 298, 298   
+        x = F.leaky_relu(self.conv1(x))   # N, 128, 298, 298   
         x = self.pool(x)            # N, 128, 149, 149
-        x = F.relu(self.conv2(x))   # N, 256, 147, 147
+        x = F.leaky_relu(self.conv2(x))   # N, 256, 147, 147
         x = self.pool(x)            # N, 256, 73, 73
-        x = F.relu(self.conv3(x))   # N, 512, 71, 71
+        x = F.leaky_relu(self.conv3(x))   # N, 512, 71, 71
         x = self.pool(x)            # N, 512, 35, 35
-        x = F.relu(self.conv4(x))   # N, 1024, 33, 33
-        #x = self.pool(x)            # N, 1024, 16, 16
-        x = F.relu(self.conv5(x))   # N, 2048, 31, 31
+        x = F.leaky_relu(self.conv4(x))   # N, 1024, 33, 33
+        x = self.pool(x)            # N, 1024, 16, 16
+        x = F.leaky_relu(self.conv5(x))   # N, 2048, 14, 14
         #x = self.pool(x)            # N, 2048, 7, 7
-        x = F.relu(self.conv6(x))   # N, 4096, 29, 29
+        x = F.leaky_relu(self.conv6(x))   # N, 4096, 12, 12
         '''x = self.pool(x)            # N, 8192, 2, 2'''
         #x = F.relu(self.conv7(x))   # N, 8192, 27, 27
         x = self.gap(x)             # N, 8192, 1, 1
         x = torch.flatten(x, 1)
-        x = F.relu(self.fc1(x))     # N, 512
+        x = F.leaky_relu(self.fc1(x))     # N, 512
         x = self.dropout(x)
         x = self.fc2(x)             # N, 3
         return x
@@ -66,9 +66,11 @@ def train():
 
     transform = transforms.Compose([
         ResizeWithPadding((300, 300)),
+        transforms.RandomResizedCrop(300, scale=(0.7, 1.0)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(10),
         transforms.ColorJitter(brightness=0.2, contrast=0.2),
+        transforms.RandomPerspective(distortion_scale=0.5, p=0.7),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
@@ -83,7 +85,7 @@ def train():
     model = ConvNet().to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
 
     n_total_steps = len(train_loader)
 
@@ -115,6 +117,14 @@ def train():
 
         loop.close()
         print(f"Epoch[{epoch + 1}] loss: {running_loss / n_total_steps:.3f}")
+        if (epoch + 1) == 10 or ((epoch + 1) > 10 and (epoch + 1 - 10) % 7 == 0 and epoch + 1 < 32):
+            for param_group in optimizer.param_groups:
+                param_group['lr'] *= 0.5
+                print('learning rate is',optimizer.param_groups[0]['lr'])
+        elif (epoch +1) > 32 and (epoch + 1 - 32) % 4 == 0:
+            for param_group in optimizer.param_groups:
+                param_group['lr'] *= 0.5
+                print('learning rate is',optimizer.param_groups[0]['lr'])
 
     print('finished training')
     PATH = './saved_model.pth'
@@ -156,5 +166,5 @@ def evaluate():
         print('Accuracy is ', acc, '%')
 
 if __name__ == '__main__':
-    train()
+    #train()
     evaluate()
