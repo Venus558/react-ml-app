@@ -166,5 +166,5 @@ def evaluate():
         print('Accuracy is ', acc, '%')
 
 if __name__ == '__main__':
-    #train()
+    train()
     evaluate()
