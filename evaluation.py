@@ -44,19 +44,23 @@ class ConvNet(nn.Module):
 
     def forward(self, x):
         # N, 3, 300, 300 (batch_size, number of colors, pixel_length, pixel_height)
-        x = F.relu(self.conv1(x))   # N, 128, 298, 298   
+        x = F.leaky_relu(self.conv1(x))   # N, 128, 298, 298   
         x = self.pool(x)            # N, 128, 149, 149
-        x = F.relu(self.conv2(x))   # N, 256, 147, 147
+        x = F.leaky_relu(self.conv2(x))   # N, 256, 147, 147
         x = self.pool(x)            # N, 256, 73, 73
-        x = F.relu(self.conv3(x))   # N, 512, 71, 71
+        x = F.leaky_relu(self.conv3(x))   # N, 512, 71, 71
         x = self.pool(x)            # N, 512, 35, 35
-        x = F.relu(self.conv4(x))   # N, 1024, 33, 33
-        x = F.relu(self.conv5(x))   # N, 2048, 31, 31
-        x = F.relu(self.conv6(x))   # N, 4096, 29, 29
+        x = F.leaky_relu(self.conv4(x))   # N, 1024, 33, 33
+        x = self.pool(x)            # N, 1024, 16, 16
+        x = F.leaky_relu(self.conv5(x))   # N, 2048, 14, 14
+        #x = self.pool(x)            # N, 2048, 7, 7
+        x = F.leaky_relu(self.conv6(x))   # N, 4096, 12, 12
+        '''x = self.pool(x)            # N, 8192, 2, 2'''
+        #x = F.relu(self.conv7(x))   # N, 8192, 27, 27
         x = self.gap(x)             # N, 8192, 1, 1
         x = torch.flatten(x, 1)
-        x = F.relu(self.fc1(x))     # N, 512
-        #x = self.dropout(x)
+        x = F.leaky_relu(self.fc1(x))     # N, 512
+        x = self.dropout(x)
         x = self.fc2(x)             # N, 3
         return x
 
