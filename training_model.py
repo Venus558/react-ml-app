@@ -75,7 +75,7 @@ def train():
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
 
-    train_dataset = torchvision.datasets.ImageFolder(root='cats-vs-dogs/',
+    train_dataset = torchvision.datasets.ImageFolder(root='training_set/',
                                                      transform=transform)
 
     train_loader = torch.utils.data.DataLoader(train_dataset,batch_size=batch_size,num_workers=6,persistent_workers=True, pin_memory=True, shuffle=True)
